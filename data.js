@@ -2,6 +2,8 @@
 
 const axios = require('axios');
 const cheerio = require('cheerio');
+const moment = require('moment')
+
 const URL_HOME = 'https://www.mytischtennis.de/clicktt/HeTTV/22-23/verein/33058/TTC-Offheim-1949/mannschaften/'
 const MYTT_PREFIX = 'https://www.mytischtennis.de';
 
@@ -29,6 +31,12 @@ function getisPlayed(row){
     return `#playingPlanDesktop > tbody > tr:nth-child(${row}) > td:nth-child(9) > i`
 }
 
+function createDate(time, datum)
+{
+const date = moment(datum.substring(3) + " "+ time, "DD.MM.YY HH:mm").utc().toDate();
+return date;
+}
+
 async function getData(t)
 {
 let values = [];
@@ -45,9 +53,11 @@ if(!info || info.length<=0)
         const $ = cheerio.load(data)        
         const rowCount = $('#playingPlanDesktop > tbody > tr').length
         for (let i = 1; i <= rowCount; i++) {
+            const teamName = element.teamName;
             const datum = $(getDatum(i)).text().replace(/\s/g, "");
             const zeit = $(getZeit(i)).text().replace(/\s/g, "");
             const time =zeit.includes("v") ? zeit.slice(0, zeit.indexOf("v")): zeit;
+            const date = createDate(time, datum);
             const heim = $(getHeim(i)).text().replace(/\s/g, " ");
             const heimLink = MYTT_PREFIX+ $(getHeim(i)).attr('href').replace(" ","%20");
 
@@ -60,8 +70,8 @@ if(!info || info.length<=0)
             const endstand = erg.length > 0 ? erg : "Kein Erg";
             const hasBeenPlayed = $(getisPlayed(i)).length > 0 ? true:false;
             values.push( {
-                datum,
-                time,
+                date,
+                teamName,
                 heim,
                 heimLink,
                 gast,
